@@ -49,9 +49,9 @@ target_fields = [
     "Purchasest",
     "Direct Wages",
     "Direct Expenses",
-    "Total Factory Overheads",
+    "Factory Overheads",
     "Total of Debits to Manufacturing Account",
-    "Total Closing Stock",
+    "Closing Stock",
     "Cost of Goods Produced – transferred to Trading Account",
     "A Sales/ Gross receipts of business",
     "Gross receipts from Profession",
@@ -118,6 +118,7 @@ target_fields = [
     "Total Taxes paid"
 ]
 
+
 def normalize(text):
     # Normalize smart quotes and apostrophes
     text = text.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
@@ -127,25 +128,54 @@ def normalize(text):
 
 def extract_field_values(pdf_path, fields):
     extracted = {field: "NA" for field in fields}
-    normalized_targets = {normalize(f): f for f in fields}
 
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
             tables = page.extract_tables()
             for table in tables:
-                for row in table:
+                for i, row in enumerate(table):
                     if not row:
                         continue
-                    joined_row = ' '.join([cell or '' for cell in row])
-                    norm_joined = normalize(joined_row)
 
-                    for norm_target, original_field in normalized_targets.items():
-                        if norm_target in norm_joined and extracted[original_field] == "NA":
-                            values = [cell for cell in row if cell and cell.strip()]
-                            if values:
-                                extracted[original_field] = values[-1].strip()
+                    # 🟡 Debugging: print rows and check if 'Factory Overheads' or 'Closing Stock' is found
+                    print(f"Raw Row: {row}")  # Debugging line
+
+                    # 🟡 Check for "Factory Overheads" (directly check without normalization for now)
+                    if 'factory overheads' in ' '.join([cell or '' for cell in row]).lower() and extracted[
+                        "Factory Overheads"] == "NA":
+                        print(f"Found Factory Overheads Row: {row}")  # Debugging line
+                        extracted["Factory Overheads"] = row[
+                            1].strip()  # Taking the value from the 2nd column (not the last)
+
+                        # Now check the next rows for "Total"
+                        for j in range(i + 1, len(table)):
+                            next_row = table[j]
+                            if not next_row:
+                                continue
+                            # Look for a "Total" row
+                            if 'total' in ' '.join([cell or '' for cell in next_row]).lower():
+                                extracted["Factory Overheads Total"] = next_row[-1].strip()
+                                break
+
+                    # 🔵 Check for "Closing Stock" (same logic as above)
+                    if 'closing stock' in ' '.join([cell or '' for cell in row]).lower() and extracted[
+                        "Closing Stock"] == "NA":
+                        print(f"Found Closing Stock Row: {row}")  # Debugging line
+                        extracted["Closing Stock"] = row[
+                            1].strip()  # Taking the value from the 2nd column (not the last)
+
+                        # Now check the next rows for "Total"
+                        for j in range(i + 1, len(table)):
+                            next_row = table[j]
+                            if not next_row:
+                                continue
+                            # Look for a "Total" row
+                            if 'total' in ' '.join([cell or '' for cell in next_row]).lower():
+                                extracted["Closing Stock Total"] = next_row[-1].strip()
+                                break
 
     return extracted
+
 
 # Run it
 pdf_path = "D:/ITR_Documnets/MAKRAM_A.Y_2020-21.pdf"

@@ -43,7 +43,7 @@ Total Opening Inventory
 Purchasest
 Direct Wages
 Direct Expenses
-Total Factory Overheads
+Factory Overheads
 Total of Debits to Manufacturing Account (Aiii+B+C+D+Evii)
 Total Closing Stock
 Cost of Goods Produced – transferred to Trading Account
